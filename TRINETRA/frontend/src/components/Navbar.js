@@ -11,7 +11,11 @@ export default function Navbar() {
   return (
     <header className="topbar">
       <div className="container topbar-inner">
-        <div className="brand">TRINETRA</div>
+        <div className="brand-wrap">
+          <div className="brand-dot" />
+          <div className="brand">TRINETRA</div>
+          <span className="brand-tag">AI Safety Cloud</span>
+        </div>
         <nav className="nav">
           {navItems.map((item) => (
             <NavLink

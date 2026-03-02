@@ -2,7 +2,7 @@ import axios from "axios";
 
 const API = axios.create({
   baseURL: process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000",
-  timeout: 10000,
+  timeout: 90000,
 });
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -97,9 +97,14 @@ const service = {
         headers: { "Content-Type": "multipart/form-data" },
       });
       return res.data;
-    } catch (_error) {
-      return demoApi.detectDeepfake(file);
-    }
+    } catch (error) {
+        const serverMessage =
+          error?.response?.data?.detail ||
+          error?.message ||
+          "Deepfake request failed";
+
+        throw new Error(serverMessage);
+      }
   },
 
   async analyzeHarassment(text, file) {

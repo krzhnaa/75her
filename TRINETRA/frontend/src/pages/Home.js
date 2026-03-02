@@ -19,23 +19,40 @@ export default function Home() {
 
   return (
     <main className="container page">
-      <section className="hero">
+      <section className="hero hero-upgraded">
         <div className="hero-content">
           <p className="eyebrow">Women Safety Intelligence</p>
-          <h1>TRINETRA AI Safety Platform</h1>
+          <h1>TRINETRA Unified AI Safety Platform</h1>
           <p className="hero-subtitle">
             A hackathon prototype combining deepfake detection, safer navigation,
             and AI-powered harassment severity scoring in one unified web app.
           </p>
           <div className="hero-actions">
-            <Link to="/deepfake" className="btn btn-primary">
+            <Link to="/deepfake" className="btn btn-primary btn-lift">
               Start Deepfake Check
             </Link>
-            <Link to="/safe-route" className="btn btn-secondary">
+            <Link to="/safe-route" className="btn btn-secondary btn-lift">
               Plan Safe Route
             </Link>
           </div>
           <p className="status-pill">{status}</p>
+        </div>
+        <div className="hero-sidepanel">
+          <p className="metric-label">Active Modules</p>
+          <div className="hero-metrics">
+            <article>
+              <p className="metric-value">3</p>
+              <p className="muted">AI Engines</p>
+            </article>
+            <article>
+              <p className="metric-value">Realtime</p>
+              <p className="muted">Threat Signals</p>
+            </article>
+            <article>
+              <p className="metric-value">API Ready</p>
+              <p className="muted">Production Paths</p>
+            </article>
+          </div>
         </div>
       </section>
 

@@ -1,104 +1,147 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from PIL import Image
-import io
 
+from app.deepfake_ai import predict_deepfake
 from app.llm_ai import analyze_harassment_llm
 from app.route_ai import plan_safe_route
 from app.ocr_ai import extract_text_from_image
 
-app = FastAPI()
 
-# ================= CORS =================
+# =====================================================
+# APP INIT
+# =====================================================
+
+app = FastAPI(
+    title="TRINETRA AI Backend",
+    version="1.0.0"
+)
+
+# =====================================================
+# CORS
+# =====================================================
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],   # change in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# ================= HEALTH =================
+# =====================================================
+# HEALTH
+# =====================================================
+
 @app.get("/")
 def home():
-    return {"status": "ok"}
+    return {"status": "ok", "service": "TRINETRA backend running"}
 
 
-# ================= DEEPFAKE =================
+# =====================================================
+# DEEPFAKE DETECTION
+# =====================================================
+
 @app.post("/deepfake/detect")
 async def detect_deepfake(file: UploadFile = File(...)):
+    """
+    Deepfake detection endpoint.
+    Receives image file -> sends bytes to deepfake model.
+    """
 
-    content = await file.read()
+    if not file:
+        raise HTTPException(status_code=400, detail="File not provided")
 
-    img = Image.open(io.BytesIO(content))
-    width, height = img.size
+    try:
+        content = await file.read()
 
-    # deterministic scoring (NO RANDOM)
-    score = 30
+        if not content:
+            raise HTTPException(status_code=400, detail="Empty file uploaded")
 
-    if width < 600 or height < 600:
-        score += 20
+        result = predict_deepfake(content)
 
-    if file.filename.lower().endswith(".png"):
-        score += 10
+        if not isinstance(result, dict):
+            raise HTTPException(
+                status_code=500,
+                detail="Invalid deepfake response format"
+            )
 
-    if len(content) < 150000:
-        score += 25
+        return result
 
-    label = "Likely Deepfake" if score > 55 else "Likely Authentic"
+    except HTTPException:
+        raise
 
-    return {
-        "label": label,
-        "confidence": min(score, 95),
-        "explanation":
-            "AI forensic analysis detected compression and facial consistency anomalies.",
-        "model": "TRINETRA Vision AI v3 (Forensic Prototype)"
-    }
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Deepfake detection failed: {str(e)}"
+        )
 
 
-# ================= HARASSMENT AI =================
+# =====================================================
+# HARASSMENT ANALYSIS
+# =====================================================
+
 @app.post("/harassment/analyze")
 async def analyze_harassment(
     text: str = Form(""),
     file: UploadFile = File(None)
 ):
+    """
+    Harassment analysis using:
+    - user text
+    - OCR text (if image uploaded)
+    """
 
     clean_text = (text or "").strip()
     ocr_text = ""
     attachment_info = None
 
-    # --- process attachment ---
+    # ---------- attachment handling ----------
     if file:
-        file_content = await file.read()
+        try:
+            file_content = await file.read()
 
-        if file_content:
-            attachment_info = {
-                "filename": file.filename,
-                "contentType": file.content_type,
-                "sizeBytes": len(file_content)
-            }
+            if file_content:
+                attachment_info = {
+                    "filename": file.filename,
+                    "contentType": file.content_type,
+                    "sizeBytes": len(file_content)
+                }
 
-            # OCR only for images
-            if (file.content_type or "").startswith("image/"):
-                try:
-                    ocr_text = extract_text_from_image(file_content)
-                except Exception:
-                    ocr_text = ""
+                # OCR only if image
+                if (file.content_type or "").startswith("image/"):
+                    try:
+                        ocr_text = extract_text_from_image(file_content)
+                    except Exception:
+                        ocr_text = ""
 
-    # nothing provided
+        except Exception as e:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Attachment processing failed: {str(e)}"
+            )
+
+    # ---------- validation ----------
     if not clean_text and not ocr_text:
         raise HTTPException(
             status_code=400,
-            detail="Provide message text or upload an attachment."
+            detail="Provide message text or upload an image."
         )
 
-    # --- AI analysis ---
-    result = await analyze_harassment_llm(
-        text=clean_text,
-        image_context=ocr_text
-    )
+    # ---------- LLM analysis ----------
+    try:
+        result = await analyze_harassment_llm(
+            text=clean_text,
+            image_context=ocr_text
+        )
 
-    # add metadata
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Harassment analysis failed: {str(e)}"
+        )
+
+    # ---------- attach metadata ----------
     if isinstance(result, dict):
         result["attachmentReceived"] = bool(attachment_info)
         if attachment_info:
@@ -107,12 +150,18 @@ async def analyze_harassment(
     return result
 
 
-# ================= SAFE ROUTE =================
+# =====================================================
+# SAFE ROUTE
+# =====================================================
+
 @app.post("/safe-route/plan")
 async def safe_route(data: dict):
+    """
+    AI safe-route planner.
+    """
 
-    source = data.get("source")
-    destination = data.get("destination")
+    source = (data.get("source") or "").strip()
+    destination = (data.get("destination") or "").strip()
 
     if not source or not destination:
         raise HTTPException(
@@ -120,6 +169,22 @@ async def safe_route(data: dict):
             detail="Missing source or destination"
         )
 
-    result = await plan_safe_route(source, destination)
+    try:
+        result = await plan_safe_route(source, destination)
 
-    return result
+        if not isinstance(result, dict):
+            raise HTTPException(
+                status_code=500,
+                detail="Invalid route response"
+            )
+
+        return result
+
+    except HTTPException:
+        raise
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Safe route planning failed: {str(e)}"
+        )
