@@ -1,13 +1,25 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { service } from "../services/api";
 import { pushToast } from "../components/ToastCenter";
+import ComplaintModal from "../components/ComplaintModal";
 
 export default function Harassment() {
+  const navigate = useNavigate();
   const [text, setText] = useState("");
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
+
+  useEffect(() => {
+    if (!result) return;
+    const level = String(result.threatLevel || "").toUpperCase();
+    const score = Number(result.severityScore);
+    const highRisk = level === "HIGH" || score >= 7.5;
+    setShowComplaintModal(highRisk);
+  }, [result]);
 
   const onAnalyze = async () => {
     if (!text.trim() && !file) {
@@ -168,6 +180,16 @@ export default function Harassment() {
           </div>
         )}
       </section>
+
+      <ComplaintModal
+        open={showComplaintModal}
+        onClose={() => setShowComplaintModal(false)}
+        type="harassment"
+        onProceed={() => {
+          setShowComplaintModal(false);
+          navigate("/complaint?source=harassment");
+        }}
+      />
     </main>
   );
 }

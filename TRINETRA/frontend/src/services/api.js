@@ -77,6 +77,16 @@ const demoApi = {
     };
   },
 
+  async assistantChat(message) {
+    await sleep(700);
+    return {
+      reply:
+        "I hear you. You are not alone, and your feelings are valid. If you want, tell me what happened step by step and we can think of a calm next action together.",
+      source: "demo",
+      mode: "support",
+    };
+  },
+
 };
 
 const service = {
@@ -142,6 +152,24 @@ const service = {
         error?.response?.data?.error ||
         error?.message ||
         "Safe route request failed";
+      throw new Error(serverMessage);
+    }
+  },
+
+  async assistantChat(message) {
+    try {
+      const res = await API.post(
+        "/assistant/chat",
+        { message },
+        { timeout: 60000 }
+      );
+      return res.data;
+    } catch (error) {
+      const serverMessage =
+        error?.response?.data?.detail ||
+        error?.response?.data?.error ||
+        error?.message ||
+        "Assistant request failed";
       throw new Error(serverMessage);
     }
   },

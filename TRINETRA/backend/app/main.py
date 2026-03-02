@@ -188,3 +188,24 @@ async def safe_route(data: dict):
             status_code=500,
             detail=f"Safe route planning failed: {str(e)}"
         )
+
+# ================= AI ASSISTANT =================
+
+@app.post("/assistant/chat")
+async def assistant_chat(data: dict):
+
+    message = (data.get("message") or "").strip()
+
+    if not message:
+        raise HTTPException(status_code=400, detail="Message required")
+
+    try:
+        from app.assistant_ai import emotional_support_reply
+        reply = await emotional_support_reply(message)
+        return {"reply": reply}
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Assistant failed: {str(e)}"
+        )

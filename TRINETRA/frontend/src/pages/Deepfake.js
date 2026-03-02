@@ -1,14 +1,26 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { service } from "../services/api";
 import { pushToast } from "../components/ToastCenter";
+import ComplaintModal from "../components/ComplaintModal";
 
 export default function Deepfake() {
+  const navigate = useNavigate();
   const [file, setFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState(null);
+  const [showComplaintModal, setShowComplaintModal] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    if (!result) return;
+    const highRisk =
+      Number(result.confidence) >= 75 ||
+      String(result.label || "").toLowerCase().includes("deepfake");
+    setShowComplaintModal(highRisk);
+  }, [result]);
 
   const selectFile = (nextFile) => {
     setFile(nextFile);
@@ -161,6 +173,16 @@ export default function Deepfake() {
           </div>
         )}
       </section>
+
+      <ComplaintModal
+        open={showComplaintModal}
+        onClose={() => setShowComplaintModal(false)}
+        type="deepfake"
+        onProceed={() => {
+          setShowComplaintModal(false);
+          navigate("/complaint?source=deepfake");
+        }}
+      />
     </main>
   );
 }
