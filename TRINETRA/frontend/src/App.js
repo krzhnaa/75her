@@ -6,7 +6,7 @@ import Deepfake from "./pages/Deepfake";
 import SafeRoute from "./pages/SafeRoute";
 import Harassment from "./pages/Harassment";
 import ComplaintPage from "./pages/ComplaintPage";
-import AIAssistant from "./components/AIAssistant";
+import AIAssistantPage from "./pages/AIAssistantPage";
 
 export default function App() {
   return (
@@ -19,8 +19,8 @@ export default function App() {
         <Route path="/safe-route" element={<SafeRoute />} />
         <Route path="/harassment" element={<Harassment />} />
         <Route path="/complaint" element={<ComplaintPage />} />
+        <Route path="/assistant" element={<AIAssistantPage />} />
       </Routes>
-      <AIAssistant />
     </BrowserRouter>
   );
 }

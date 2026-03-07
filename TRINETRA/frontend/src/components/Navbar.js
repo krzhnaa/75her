@@ -6,6 +6,7 @@ export default function Navbar() {
     { to: "/deepfake", label: "Deepfake" },
     { to: "/safe-route", label: "Safe Route" },
     { to: "/harassment", label: "Harassment AI" },
+    { to: "/assistant", label: "AI Assistant" },
   ];
 
   return (

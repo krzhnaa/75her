@@ -19,89 +19,80 @@ export default function Home() {
 
   return (
     <main className="container page">
-      <section className="hero hero-upgraded">
-        <div className="hero-content">
-          <p className="eyebrow">Women Safety Intelligence</p>
-          <h1>TRINETRA Unified AI Safety Platform</h1>
-          <p className="hero-subtitle">
-            A hackathon prototype combining deepfake detection, safer navigation,
-            and AI-powered harassment severity scoring in one unified web app.
-          </p>
-          <div className="hero-actions">
-            <Link to="/deepfake" className="btn btn-primary btn-lift">
-              Start Deepfake Check
-            </Link>
-            <Link to="/safe-route" className="btn btn-secondary btn-lift">
-              Plan Safe Route
-            </Link>
-          </div>
+      <section className="hero home-hero-clean">
+        <p className="eyebrow">TRINETRA Safety Hub</p>
+        <h1>Safer decisions in minutes</h1>
+        <p className="hero-subtitle">
+          Use AI tools for deepfake checks, harassment analysis, safer routes, and guided assistant support.
+        </p>
+        <div className="home-status-row">
           <p className="status-pill">{status}</p>
-        </div>
-        <div className="hero-sidepanel">
-          <p className="metric-label">Active Modules</p>
-          <div className="hero-metrics">
-            <article>
-              <p className="metric-value">3</p>
-              <p className="muted">AI Engines</p>
-            </article>
-            <article>
-              <p className="metric-value">Realtime</p>
-              <p className="muted">Threat Signals</p>
-            </article>
-            <article>
-              <p className="metric-value">API Ready</p>
-              <p className="muted">Production Paths</p>
-            </article>
-          </div>
+          <span className="home-kpi-pill">4 core tools</span>
+          <span className="home-kpi-pill">fast response</span>
+          <span className="home-kpi-pill">privacy-first UX</span>
         </div>
       </section>
 
-      <section className="feature-grid">
-        <article className="feature-card">
+      <section className="home-action-grid">
+        <article className="home-action-card">
           <h3>Deepfake Detection</h3>
-          <p>
-            Upload image/video clips to get manipulation probability and forensic
-            explanation.
-          </p>
-          <Link to="/deepfake" className="text-link">
-            Open feature
+          <p>Upload media and get manipulation probability with confidence.</p>
+          <Link to="/deepfake" className="btn btn-primary btn-lift home-action-btn">
+            Open
           </Link>
         </article>
 
-        <article className="feature-card">
-          <h3>Safe Route Navigator</h3>
-          <p>
-            Route planning based on risk signals like incident density,
-            crowd-footfall, and lighting quality.
-          </p>
-          <Link to="/safe-route" className="text-link">
-            Open feature
+        <article className="home-action-card">
+          <h3>Harassment AI</h3>
+          <p>Classify harmful text severity and get immediate recommended actions.</p>
+          <Link to="/harassment" className="btn btn-primary btn-lift home-action-btn">
+            Open
           </Link>
         </article>
 
-        <article className="feature-card">
-          <h3>NLP Harassment Scorer</h3>
-          <p>
-            Analyze chats, comments, or messages to classify threat severity and
-            escalation risk.
-          </p>
-          <Link to="/harassment" className="text-link">
-            Open feature
+        <article className="home-action-card">
+          <h3>Safe Route</h3>
+          <p>Plan routes with risk cues like lighting, crowd, and incident density.</p>
+          <Link to="/safe-route" className="btn btn-primary btn-lift home-action-btn">
+            Open
+          </Link>
+        </article>
+
+        <article className="home-action-card">
+          <h3>AURA Assistant</h3>
+          <p>Get emotional support, legal awareness, and step-by-step guidance.</p>
+          <Link to="/assistant" className="btn btn-primary btn-lift home-action-btn">
+            Open
           </Link>
         </article>
       </section>
 
-      <section className="panel compliance-panel">
-        <h3>#75HER AI/ML Track Readiness</h3>
-        <p className="muted">
-          This prototype is wired for backend AI endpoints and includes demo
-          fallback mode so you can present today and connect goose-powered models
-          next.
-        </p>
-        <p className="muted">
-          Suggested backend env: <code>GOOSE_API_KEY</code>,{" "}
-          <code>GOOSE_MODEL=claude-sonnet-4.6</code>
-        </p>
+      <section className="panel home-flow-panel">
+        <h3>How to use TRINETRA</h3>
+        <div className="home-flow-grid">
+          <article>
+            <p className="home-flow-step">Step 1</p>
+            <p className="muted">Start with the tool matching your immediate concern.</p>
+          </article>
+          <article>
+            <p className="home-flow-step">Step 2</p>
+            <p className="muted">Review the risk output and evidence hints.</p>
+          </article>
+          <article>
+            <p className="home-flow-step">Step 3</p>
+            <p className="muted">Use AURA Assistant for next actions and legal-awareness Q&A.</p>
+          </article>
+        </div>
+      </section>
+
+      <section className="panel home-trust-panel">
+        <h3>Designed for clarity</h3>
+        <div className="home-trust-grid">
+          <p className="muted">Single-screen actions</p>
+          <p className="muted">Readable risk output</p>
+          <p className="muted">Action-focused guidance</p>
+          <p className="muted">Mobile-friendly layout</p>
+        </div>
       </section>
     </main>
   );
