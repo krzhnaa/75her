@@ -1,9 +1,43 @@
 import axios from "axios";
 
-const API = axios.create({
-  baseURL: process.env.REACT_APP_API_BASE_URL || "http://127.0.0.1:8000",
-  timeout: 90000,
-});
+const LOCAL_API_BASE_URL = "http://127.0.0.1:8000";
+const CONFIGURED_API_BASE_URL = (process.env.REACT_APP_API_BASE_URL || "").trim();
+
+const isLocalBrowser = () => {
+  if (typeof window === "undefined") return false;
+  return ["localhost", "127.0.0.1"].includes(window.location.hostname);
+};
+
+const getApiBaseUrls = () => {
+  const candidates = [];
+
+  if (CONFIGURED_API_BASE_URL) {
+    candidates.push(CONFIGURED_API_BASE_URL);
+  }
+
+  if (!CONFIGURED_API_BASE_URL) {
+    candidates.push(LOCAL_API_BASE_URL);
+  }
+
+  if (isLocalBrowser() && !candidates.includes(LOCAL_API_BASE_URL)) {
+    candidates.push(LOCAL_API_BASE_URL);
+  }
+
+  return [...new Set(candidates)];
+};
+
+const API_BASE_URLS = getApiBaseUrls();
+
+const createClient = (baseURL) =>
+  axios.create({
+    baseURL,
+    timeout: 90000,
+  });
+
+const apiClients = API_BASE_URLS.map((baseURL) => ({
+  baseURL,
+  client: createClient(baseURL),
+}));
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -20,6 +54,46 @@ const toThreatLabel = (score) => {
   if (score >= 7.5) return "HIGH";
   if (score >= 4.5) return "MEDIUM";
   return "LOW";
+};
+
+const getErrorMessage = (error, fallbackMessage) =>
+  error?.response?.data?.detail ||
+  error?.response?.data?.error ||
+  error?.message ||
+  fallbackMessage;
+
+const shouldRetryWithFallback = (error, baseURL) => {
+  if (baseURL === LOCAL_API_BASE_URL) return false;
+  if (!API_BASE_URLS.includes(LOCAL_API_BASE_URL)) return false;
+
+  const status = error?.response?.status;
+  const message = getErrorMessage(error, "").toLowerCase();
+
+  if (!status) return true;
+  if (status >= 500) return true;
+  if (message.includes("'choices'")) return true;
+  if (message.includes("network error")) return true;
+  if (message.includes("failed to fetch")) return true;
+
+  return false;
+};
+
+const requestWithFallback = async (requestFactory, fallbackMessage) => {
+  let lastError = null;
+
+  for (const { client, baseURL } of apiClients) {
+    try {
+      const response = await requestFactory(client);
+      return response.data;
+    } catch (error) {
+      lastError = error;
+      if (!shouldRetryWithFallback(error, baseURL)) {
+        break;
+      }
+    }
+  }
+
+  throw new Error(getErrorMessage(lastError, fallbackMessage));
 };
 
 const demoApi = {
@@ -55,14 +129,14 @@ const demoApi = {
         severityScore >= 7.5
           ? "Criminal Intimidation + Sexual Harassment"
           : severityScore >= 4.5
-          ? "Abusive / Threatening Language"
-          : "Mild Toxicity / Monitoring Needed",
+            ? "Abusive / Threatening Language"
+            : "Mild Toxicity / Monitoring Needed",
       escalationRisk:
         severityScore >= 7.5
           ? "Severe"
           : severityScore >= 4.5
-          ? "Moderate"
-          : "Low",
+            ? "Moderate"
+            : "Low",
       indicators: [
         { name: "Toxicity", score: Math.min(10, severityScore + 0.6) },
         { name: "Threat Intent", score: Math.max(0, severityScore - 0.3) },
@@ -77,7 +151,7 @@ const demoApi = {
     };
   },
 
-  async assistantChat(message) {
+  async assistantChat() {
     await sleep(700);
     return {
       reply:
@@ -86,94 +160,79 @@ const demoApi = {
       mode: "support",
     };
   },
-
 };
 
 const service = {
   async health() {
     try {
-      const res = await API.get("/");
-      return res.data;
+      return await requestWithFallback(
+        (client) => client.get("/"),
+        "Health request failed"
+      );
     } catch (_error) {
       return demoApi.health();
     }
   },
 
   async detectDeepfake(file) {
-    try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await API.post("/deepfake/detect", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return res.data;
-    } catch (error) {
-        const serverMessage =
-          error?.response?.data?.detail ||
-          error?.message ||
-          "Deepfake request failed";
+    const formData = new FormData();
+    formData.append("file", file);
 
-        throw new Error(serverMessage);
-      }
+    return requestWithFallback(
+      (client) =>
+        client.post("/deepfake/detect", formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        }),
+      "Deepfake request failed"
+    );
   },
 
   async analyzeHarassment(text, file) {
-    try {
-      const formData = new FormData();
-      formData.append("text", text || "");
-      if (file) formData.append("file", file, file.name);
-      const res = await API.post("/harassment/analyze", formData, {
-        timeout: 60000,
-      });
-      return res.data;
-    } catch (error) {
-      const serverMessage =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Harassment analysis request failed";
-      throw new Error(serverMessage);
-    }
+    const formData = new FormData();
+    formData.append("text", text || "");
+    if (file) formData.append("file", file, file.name);
+
+    return requestWithFallback(
+      (client) =>
+        client.post("/harassment/analyze", formData, {
+          timeout: 60000,
+        }),
+      "Harassment analysis request failed"
+    );
   },
 
   async getSafeRoute(source, destination, options = {}) {
-    try {
-      const res = await API.post("/safe-route/plan", {
-        source,
-        destination,
-        ...options,
-      }, {
-        timeout: 60000,
-      });
-      return res.data;
-    } catch (error) {
-      const serverMessage =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Safe route request failed";
-      throw new Error(serverMessage);
-    }
+    return requestWithFallback(
+      (client) =>
+        client.post(
+          "/safe-route/plan",
+          {
+            source,
+            destination,
+            ...options,
+          },
+          {
+            timeout: 60000,
+          }
+        ),
+      "Safe route request failed"
+    );
   },
 
   async assistantChat(message) {
-    try {
-      const res = await API.post(
-        "/assistant/chat",
-        { message },
-        { timeout: 60000 }
-      );
-      return res.data;
-    } catch (error) {
-      const serverMessage =
-        error?.response?.data?.detail ||
-        error?.response?.data?.error ||
-        error?.message ||
-        "Assistant request failed";
-      throw new Error(serverMessage);
-    }
+    return requestWithFallback(
+      (client) =>
+        client.post(
+          "/assistant/chat",
+          { message },
+          { timeout: 60000 }
+        ),
+      "Assistant request failed"
+    );
   },
 };
 
-export { service };
+const API = apiClients[0]?.client || createClient(LOCAL_API_BASE_URL);
+
+export { API_BASE_URLS, service };
 export default API;

@@ -1,10 +1,14 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from dotenv import load_dotenv
 
+from app.assistant_ai import emotional_support_reply
 from app.deepfake_ai import predict_deepfake
 from app.llm_ai import analyze_harassment_llm
 from app.route_ai import plan_safe_route
 from app.ocr_ai import extract_text_from_image
+
+load_dotenv()
 
 
 # =====================================================
@@ -200,7 +204,6 @@ async def assistant_chat(data: dict):
         raise HTTPException(status_code=400, detail="Message required")
 
     try:
-        from app.assistant_ai import emotional_support_reply
         reply = await emotional_support_reply(message)
         return {"reply": reply}
 
